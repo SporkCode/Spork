@@ -26,6 +26,6 @@ class InlineScript extends \Zend\View\Helper\InlineScript
             $googleAnalytic = $helperManager->get('googleAnalytic');
             $googleAnalytic->initialize();
         }
-        return parent::__toString();
+        return parent::toString();
     }
 }
