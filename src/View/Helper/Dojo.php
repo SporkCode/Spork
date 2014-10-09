@@ -320,13 +320,11 @@ class Dojo extends \Zend\View\Helper\AbstractHelper
     
     /**
      * Add Dojo configuration to HeadScript. Should only be called once.
-     * 
-     * @throws \Exception on initialized multiple times
      */
     public function initialize()
     {
         if (true == $this->initialized) {
-            throw new \Exception('Dojo should only be initialized once');
+            return;
         }
 
         $this->initialized = true;

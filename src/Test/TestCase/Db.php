@@ -31,13 +31,13 @@ class Db extends Service
      * @var boolean
      */
     protected static $dbInitialized = false;
-
+    
     /**
-     * Name of database adapter service
+     * Database adapter
      * 
-     * @var string
+     * @var \Zend\Db\Adapter\AdapterInterface
      */
-    protected $dbAdapterServiceName = 'db';
+    protected static $dbAdapter;
 
     /**
      * Assert that a table has specified number for rows
@@ -77,26 +77,34 @@ class Db extends Service
     protected function setUp()
     {
         parent::setUp();
+
+        $services = $this->getServices();
+        $dbMainServiceName = isset($GLOBALS['DB_MAIN_SERVICE_NAME']) ? $GLOBALS['DB_MAIN_SERVICE_NAME'] : 'db';
         
-        $db = $this->getServices()->get($this->dbAdapterServiceName);
-        
-        if (false === self::$dbInitialized) {
-            self::$dbInitialized = true;
+        if (null === self::$dbAdapter) {
+            $dbTestServiceName = isset($GLOBALS['DB_TEST_SERVICE_NAME']) ? $GLOBALS['DB_TEST_SERVICE_NAME'] : null;
             
-            foreach ($this->getTables($db) as $table) {
-                $this->createTemporaryTable($table, $db);
+            self::$dbAdapter = null === $dbTestServiceName ? $services->get($dbMainServiceName) : $services->get($dbTestServiceName);
+            
+            foreach ($this->getTables(self::$dbAdapter) as $table) {
+                $this->createTemporaryTable($table, self::$dbAdapter);
             }
         } else {
-            foreach ($this->getTables($db) as $table) {
-                $createTable = $this->getCreateTable($table, $db);
-                if (strpos($createTable, 'CREATE TEMPORARY TABLE') == 0) {
-                    $result = $db->query("truncate table `$table`", 
+            foreach ($this->getTables(self::$dbAdapter) as $table) {
+                $createTable = $this->getCreateTable($table, self::$dbAdapter);
+                if (strpos($createTable, 'CREATE TEMPORARY TABLE') === 0) {
+                    $result = self::$dbAdapter->query("truncate table `$table`",
                         Adapter::QUERY_MODE_EXECUTE);
                 } else {
                     throw new \Exception("Table '$table' is not temporary");
                 }
             }
         }
+        
+        $allowOverride = $services->getAllowOverride();
+        $services->setAllowOverride(true)
+                ->setService($dbMainServiceName, self::$dbAdapter)
+                ->setAllowOverride($allowOverride);
     }
     
     /**
