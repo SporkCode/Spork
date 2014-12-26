@@ -8,7 +8,12 @@
 return array(
     'service_manager' => array(
         'abstract_factories' => array(),
-        'aliases' => array()
+        'aliases' => array(),
+        'invokables' => array(
+            'cssLess' => 'Spork\CSS\Less',
+            'cssSass' => 'Spork\CSS\Sass',
+            'cssStylus' => 'Spork\CSS\Stylus',
+        ),
     ),
     'view_helpers' => array(
         'invokables' => array(
@@ -16,10 +21,11 @@ return array(
             'headScript' => 'Spork\View\Helper\HeadScript',
             'inlineScript' => 'Spork\View\Helper\InlineScript',
             'styleStylus' => 'Spork\View\Helper\Style\Stylus',
-            'timeElapsed' => 'Spork\View\Helper\TimeElapsed',
+            'timeElapsed' => 'Spork\View\Helper\TimeElapsed'
         ),
         'factories' => array(
-            'dojo' => 'Spork\View\Helper\Dojo'
+            'dojo' => 'Spork\View\Helper\Dojo',
+            'googleAnalytic' => 'Spork\View\Helper\GoogleAnalytic',
         )
     )
 );

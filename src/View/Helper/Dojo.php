@@ -208,6 +208,11 @@ class Dojo extends \Zend\View\Helper\AbstractHelper
     {
         $this->modules[] = $module;
     }
+    
+    public function setModules(array $modules)
+    {
+        $this->modules = $modules;
+    }
 
     /**
      * Remove module

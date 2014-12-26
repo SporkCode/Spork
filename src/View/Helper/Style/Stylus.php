@@ -43,9 +43,9 @@ class Stylus extends AbstractHelper
             throw new \Exception("Failed resolving Stylus template '$template'");
         }
         $file = escapeshellarg($file);
-        $result = exec("/usr/local/bin/stylus --print $file", $output, $exitCode);
+        $result = exec("/usr/local/bin/stylus --print $file 2>&1", $output, $exitCode);
         if ($exitCode != 0) {
-            return '';
+            throw new \Exception(sprintf("Failed compiling Stylus CSS: %s", $result));
         }
         return '<style>' . implode('', $output) . '</style>';
     }

@@ -59,7 +59,26 @@ class AccessDeniedStrategy extends AbstractListenerAggregate
      */
     public function attach(EventManagerInterface $events)
     {
-        $this->listeners[] = $events->attach(MvcEvent::EVENT_DISPATCH, array($this, 'injectAccessDeniedModel'), 1000);
+        $sharedEvents = $events->getSharedManager();
+        
+        // check for 403 at beginning of route and dispatch events
+        $this->listeners[] = $events->attach(
+            array(MvcEvent::EVENT_ROUTE, MvcEvent::EVENT_DISPATCH),
+            array($this, 'detectAccessDenied'),
+            1000);
+
+        // check for 403 immediately after controller dispatch
+        $this->listeners[] = $sharedEvents->attach(
+            'Zend\Stdlib\DispatchableInterface',
+            MvcEvent::EVENT_DISPATCH,
+            array($this, 'detectAccessDenied'),
+            0);
+        
+        // inject access denied view model
+        $this->listeners[] = $events->attach(
+            MvcEvent::EVENT_RENDER, 
+            array($this, 'injectAccessDeniedViewModel'), 
+            1);
     }
     
     /**
@@ -107,11 +126,25 @@ class AccessDeniedStrategy extends AbstractListenerAggregate
     }
     
     /**
+     * If response status code is 403 set error state and stop event propagation
+     * 
+     * @param MvcEvent $event
+     */
+    public function detectAccessDenied(MvcEvent $event)
+    {
+        $response = $event->getResponse();
+        if ($response->getStatusCode() == 403) {
+            $event->setError('Access Denied');
+            $event->stopPropagation(true);
+        }
+    }
+    
+    /**
      * Inject access denied View Model is response status is 403
      * 
      * @param MvcEvent $event
      */
-    public function injectAccessDeniedModel(MvcEvent $event)
+    public function injectAccessDeniedViewModel(MvcEvent $event)
     {
         $this->config($event);
         
@@ -126,9 +159,6 @@ class AccessDeniedStrategy extends AbstractListenerAggregate
         if ($response->getStatusCode() != 403) {
             return;
         }
-        
-        $event->setError('Access Denied');
-        $event->stopPropagation(true);
         
         $model = new ViewModel();
         $model->setTemplate($this->template);

@@ -15,7 +15,7 @@ use Zend\View\Model\ModelInterface;
 /**
  * PHPUnit test case for testing view templates
  */
-class View extends Db
+class TestCaseView extends TestCaseDb
 {
     /**
      * View Model
@@ -34,7 +34,7 @@ class View extends Db
     /**
      * Initialize View Model instance
      * 
-     * @see \Spork\Test\TestCase\Db::setUp()
+     * @see \Spork\Test\TestCase\TestCaseDb::setUp()
      */
     protected function setUp()
     {
@@ -75,7 +75,7 @@ class View extends Db
     /**
      * Remove View Model
      * 
-     * @see \Spork\Test\TestCase\Service::tearDown()
+     * @see \Spork\Test\TestCase\TestCaseService::tearDown()
      */
     protected function tearDown()
     {

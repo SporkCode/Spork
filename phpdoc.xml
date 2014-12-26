@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpdoc>
+  <title>Spork Zend Framework 2 Library</title>
+  <parser>
+    <target>doc</target>
+  </parser>
+  <files>
+    <directory>module/Spork</directory>
+  </files>
+</phpdoc>

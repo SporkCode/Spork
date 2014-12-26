@@ -23,7 +23,7 @@ use Zend\Db\Sql\Expression;
  * Temporary tables are changed to use the Memory engine when possible to
  * speed up performance.   
  */
-class Db extends Service
+class TestCaseDb extends TestCaseService
 {
     /**
      * Has database been initialized
@@ -71,7 +71,7 @@ class Db extends Service
     /**
      * Initializes database on first run then resets tables on subsequent runs.
      * 
-     * @see \Spork\Test\TestCase\Service::setUp()
+     * @see \Spork\Test\TestCase\TestCaseService::setUp()
      * @throws \Exception on attempt to reset non temporary table
      */
     protected function setUp()
@@ -80,24 +80,24 @@ class Db extends Service
 
         $services = $this->getServices();
         $dbMainServiceName = isset($GLOBALS['DB_MAIN_SERVICE_NAME']) ? $GLOBALS['DB_MAIN_SERVICE_NAME'] : 'db';
+        $dbTestServiceName = isset($GLOBALS['DB_TEST_SERVICE_NAME']) ? $GLOBALS['DB_TEST_SERVICE_NAME'] : null;
+        $source = $services->get($dbMainServiceName);
+        $dest = null === $dbTestServiceName ? $services->get($dbMainServiceName) : $services->get($dbTestServiceName);
         
         if (null === self::$dbAdapter) {
-            $dbTestServiceName = isset($GLOBALS['DB_TEST_SERVICE_NAME']) ? $GLOBALS['DB_TEST_SERVICE_NAME'] : null;
+            self::$dbAdapter = $dest;
             
-            self::$dbAdapter = null === $dbTestServiceName ? $services->get($dbMainServiceName) : $services->get($dbTestServiceName);
-            
-            foreach ($this->getTables(self::$dbAdapter) as $table) {
-                $this->createTemporaryTable($table, self::$dbAdapter);
-            }
+            $this->initializeDatabase($source, $dest);
         } else {
             foreach ($this->getTables(self::$dbAdapter) as $table) {
-                $createTable = $this->getCreateTable($table, self::$dbAdapter);
-                if (strpos($createTable, 'CREATE TEMPORARY TABLE') === 0) {
-                    $result = self::$dbAdapter->query("truncate table `$table`",
-                        Adapter::QUERY_MODE_EXECUTE);
-                } else {
-                    throw new \Exception("Table '$table' is not temporary");
+                if ($source->getCurrentSchema() == $dest->getCurrentSchema()) {
+                    $createTable = $this->getCreateTable($table, self::$dbAdapter);
+                    if (strpos($createTable, 'CREATE TEMPORARY TABLE') === false) {
+                        throw new \Exception("Table '$table' is not temporary");
+                    }
                 }
+                $result = self::$dbAdapter->query("truncate table `$table`",
+                        Adapter::QUERY_MODE_EXECUTE);
             }
         }
         
@@ -107,22 +107,45 @@ class Db extends Service
                 ->setAllowOverride($allowOverride);
     }
     
+    private function initializeDatabase(Adapter $source, Adapter $dest)
+    {
+        if ($source->getCurrentSchema() != $dest->getCurrentSchema()) {
+            $destDatabase = $dest->platform->quoteIdentifier($dest->getCurrentSchema());
+            $dest->query("DROP DATABASE $destDatabase", Adapter::QUERY_MODE_EXECUTE);
+            $dest->query("CREATE DATABASE $destDatabase", Adapter::QUERY_MODE_EXECUTE);
+            $dest->query("USE $destDatabase", Adapter::QUERY_MODE_EXECUTE);
+        }
+        
+        foreach ($this->getTables($source) as $table) {
+            $this->createTestTable($table, $source, $dest);
+        }
+    }
+    
     /**
      * Copies table structure and creates temporary table on top of it.
      * 
      * @param string $table Table name
      * @param Adapter $db
      */
-    private function createTemporaryTable($table, Adapter $db)
+    private function createTestTable($table, Adapter $source, Adapter $dest)
     {
-        $createTable = $this->getCreateTable($table, $db);
-        $createTable = str_replace('CREATE TABLE', 'CREATE TEMPORARY TABLE',
-            $createTable);
+        $createTable = $this->getCreateTable($table, $source);
+        if ($source->getCurrentSchema() == $dest->getCurrentSchema()) {
+            $createTable = str_replace('CREATE TABLE', 'CREATE TEMPORARY TABLE',
+                $createTable);
+//         } else {
+//             if (preg_match('"^\s*CREATE\s*(TEMPORARY)?\s*TABLE\s*(IF\s*NOT\s*EXISTS)?\s*`?(\w+)`?\s"i', 
+//                     $createTable, $matches)) {
+//                 $createTable = "DROP TABLE IF EXISTS `{$matches[3]}`; \n" . $createTable;
+//             } else {
+//                 throw new \Exception("Cannot parse create table statement");
+//             }
+        }
         $createTable = preg_replace('/ENGINE=\w+/', 'ENGINE=Memory',
             $createTable, 1);
         $createTable = preg_replace('`\stext(\s|,)`i', ' varchar(512)$1',
             $createTable);
-        $db->query($createTable, Adapter::QUERY_MODE_EXECUTE);
+        $dest->query($createTable, Adapter::QUERY_MODE_EXECUTE);
     }
 
     /**

@@ -37,11 +37,14 @@ class Date extends AbstractHelper implements FactoryInterface
      * @param \DateTimeInterface $datetime
      * @param string $format
      */
-    public function __invoke(\DateTimeInterface $datetime, $format = 'medium')
+    public function __invoke($datetime, $format = 'medium')
     {
+        $datetime = $this->normalize($datetime);
+        
         if (array_key_exists($format, $this->formats)) {
             $format = $this->formats[$format];
         }
+        
         return $datetime->format($format);
     }
     
@@ -109,5 +112,22 @@ class Date extends AbstractHelper implements FactoryInterface
     public function getFormats()
     {
         return $this->formats;
+    }
+    
+    protected function normalize($datetime)
+    {
+        if ($datetime instanceof \DateTimeInterface) {
+            return $datetime;
+        }
+        if (is_numeric($datetime)) {
+            $datetime = new \DateTime('@' . $datetime);
+            $datetime->setTimezone(new \DateTimeZone(date_default_timezone_get()));
+            return $datetime;
+        }
+        if (is_string($datetime)) {
+            return new \DateTime($datetime);
+        }
+        
+        throw new \Exception('Invalid date time type (%s)', gettype($datetime));
     }
 }

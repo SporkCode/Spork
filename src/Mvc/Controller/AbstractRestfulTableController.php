@@ -56,8 +56,8 @@ abstract class AbstractRestfulTableController extends AbstractRestfulController
 		}
 		$this->setContentRange($start, $end, $count);
 		
-		$data =  $this->getListData($select);
-		$this->response->setContent(Json::encode($data->toArray()));
+		$data = $this->getListData($select);
+		$this->response->setContent(Json::encode($this->toArray($data)));
 		return $this->response;
 	}
 	
@@ -110,5 +110,28 @@ abstract class AbstractRestfulTableController extends AbstractRestfulController
 	{
 		$this->response->getHeaders()->addHeaderLine(sprintf(
 				'Content-Range: items %d-%d/%d', $start, $end, $total));
+	}
+	
+	/**
+	 * Convert a result set to an array
+	 * 
+	 * @param unknown $data
+	 */
+	protected function toArray($data)
+	{
+	    if (is_array($data)) {
+	        return $data;
+	    }
+	    
+	    if (is_object($data)) {
+	        if (method_exists($data, 'toArray')) {
+	            return $data->toArray();
+	        }
+	        if ($data instanceof \Traversable) {
+	            return iterator_to_array($data);
+	        }
+	    }
+	    
+	    return (array) $data;
 	}
 }

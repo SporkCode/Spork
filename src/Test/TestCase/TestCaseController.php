@@ -23,8 +23,13 @@ use Zend\Console\Console;
 /**
  * PHPUnit Test Case for testing controller actions
  */
-class Controller extends Db
+class TestCaseController extends TestCaseDb
 {
+    /**
+     * @var \Zend\Mvc\Application
+     */
+    protected $application;
+    
     /**
      * Is console state
      * 
@@ -55,7 +60,7 @@ class Controller extends Db
 	/**
 	 * Setup resources for dispatching a controller action
 	 * 
-	 * @see \Spork\Test\TestCase\Db::setUp()
+	 * @see \Spork\Test\TestCase\TestCaseDb::setUp()
 	 */
 	protected function setUp()
 	{
@@ -67,6 +72,7 @@ class Controller extends Db
 		$serviceManager = $this->getServiceManager();
 		
 		$this->params = array();
+		$this->application = $serviceManager->get('application');
 		$this->request = $serviceManager->get('request');
 		$this->response = $serviceManager->get('response');
 	}
@@ -82,46 +88,81 @@ class Controller extends Db
 	{
 	    $serviceManager = $this->getServiceManager();
 	    
-		if ($controller instanceof AbstractController) {
-			$controllerName = get_class($controller);
-		} else {
-			$controllerName = $controller;
-			$controllerLoader = $serviceManager->get('controllerLoader');
-			$controller = $controllerLoader->get($controller);
-		}
+// 		if ($controller instanceof AbstractController) {
+// 			$controllerName = get_class($controller);
+// 		} else {
+// 			$controllerName = $controller;
+// 			$controllerLoader = $serviceManager->get('controllerLoader');
+// 			$controller = $controllerLoader->get($controller);
+// 		}
+        $controllerName = $controller;
 
 	    $request = $this->request; 
 	    $response = $this->response;
 	    
-	    $application = $serviceManager->get('application');
+	    $application = $this->application;
 	    $application->bootstrap();
 	    $event = $application->getMvcEvent();
 	    
-	    $controller->setEvent($event);
+// 	    $controller->setEvent($event);
 		
-		$params = $this->params;
-		$params['controller'] = $controllerName;
-		if (null != $action) {
-			$params['action'] = $action;
-		}
-	    $routeMatch = new RouteMatch($params);
-	    $event->setRouteMatch($routeMatch);
+ 		$params = $this->params;
+ 		$params['controller'] = $controllerName;
+ 		if (null != $action) {
+ 			$params['action'] = $action;
+ 		}
+ 	    $routeMatch = new RouteMatch($params);
+ 	    $event->setRouteMatch($routeMatch);
 
-		$router = $serviceManager->get('router');
-		$router->setRequestUri($request->getUri());
-	    $event->setRouter($router);
+ 		$router = $serviceManager->get('router');
+ 		$router->setRequestUri($request->getUri());
+ 	    $event->setRouter($router);
 	    
-		return $controller->dispatch($request, $response);
+//		return $controller->dispatch($request, $response);
+
+	    $events = $application->getEventManager();
+	    $results = $events->trigger(
+	        MvcEvent::EVENT_DISPATCH, 
+	        $event, 
+	        function($response) use ($event) {
+    	        if ($response instanceof ResponseInterface) {
+    	            return true;
+    	        }
+    	        if ($event->getError()) {
+    	            return true;
+    	        }
+    	        return false;
+	       }
+	    );
+	    
+	    return $event->getResult();
 	}
 	
 	/**
 	 * Reset is console flag
 	 * 
-	 * @see \Spork\Test\TestCase\Service::tearDown()
+	 * @see \Spork\Test\TestCase\TestCaseService::tearDown()
 	 */
 	protected function tearDown()
 	{
 	    Console::overrideIsConsole($this->isConsole);
+	}
+	
+	/**
+	 * Assert that the application caught an exception
+	 * 
+	 * @param string $class
+	 * @param string $message
+	 */
+	protected function assertApplicationException($class = 'Exception', $message = null)
+	{
+	    $event = $this->application->getMvcEvent();
+	    $this->assertTrue($event->isError());
+	    $exception = $event->getParam('exception');
+	    $this->assertInstanceOf($class, $exception);
+	    if (null !== $message) {
+	        $this->assertEquals($message, $exception->getMessage());
+	    }
 	}
 	
 	/**
@@ -262,6 +303,19 @@ class Controller extends Db
 		$auth = $this->getServiceManager()->get('auth');
 		$auth->authenticate(new \Itt\Lib\Authentication\Adapter\Dummy($member));
 	}
+
+	/**
+	 * Set Request content
+	 *
+	 * @param mixed $content
+	 */
+	protected function setContent($content)
+	{
+	    if (!is_scalar($content)) {
+	        $content = http_build_query($content);
+	    }
+	    $this->getRequest()->setContent($content);
+	}
 	
 	/**
 	 * Set Request method
@@ -307,7 +361,7 @@ class Controller extends Db
 			$post = new Parameters($post);
 		}
 		$this->getRequest()->setPost($post);
-		$this->getRequest()->setMethod(Request::METHOD_POST);
+		//$this->getRequest()->setMethod(Request::METHOD_POST);
 	}
 	
 	/**

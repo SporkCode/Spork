@@ -16,7 +16,7 @@ use Zend\ServiceManager\ServiceManagerAwareInterface;
 /**
  * PHPUnit Test Case for tests that need a Service Manager
  */
-abstract class Service extends General
+abstract class TestCaseService extends TestCase
 {
     use \Spork\ServiceManager\ServicesAwareTrait;
     
