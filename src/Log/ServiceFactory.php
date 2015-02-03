@@ -28,7 +28,7 @@ class ServiceFactory implements FactoryInterface
      * Creates a Logger service
      * 
      * @see \Zend\ServiceManager\FactoryInterface::createService()
-     * @param ServiceLocatorInterface $serviceLocator
+     * @param \Zend\ServiceManager\ServiceLocatorInterface $serviceLocator
      * @return \Zend\Log\LoggerInterface
      */
     public function createService(ServiceLocatorInterface $serviceLocator)

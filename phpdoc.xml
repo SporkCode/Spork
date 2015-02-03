@@ -2,9 +2,15 @@
 <phpdoc>
   <title>Spork Zend Framework 2 Library</title>
   <parser>
-    <target>doc</target>
+    <target>doc/cache</target>
   </parser>
+  <transformer>
+    <target>doc/reference</target>
+  </transformer>
+  <transformations>
+    <template name="clean"/>
+  </transformations>
   <files>
-    <directory>module/Spork</directory>
+    <directory>src</directory>
   </files>
 </phpdoc>

@@ -16,7 +16,7 @@ use Zend\ServiceManager\ServiceLocatorInterface;
 use Spork\CSS\AbstractCompiler;
 
 /**
- *
+ * Event listener to update CSS files 
  */
 class UpdateListener extends AbstractListenerAggregate
 {
@@ -26,6 +26,8 @@ class UpdateListener extends AbstractListenerAggregate
     protected $compiler;
     
     protected $builds = array();
+    
+    protected $include;
     
     public function __construct(array $options = array())
     {
@@ -64,13 +66,12 @@ class UpdateListener extends AbstractListenerAggregate
             if (!file_exists($build['source'])) {
                 throw new \Exception('CSS Update Listener: Source not found');
             }
-            
             if (!isset($build['destination'])) {
                 $build['destination'] = $build['source'];
             } elseif (!file_exists($build['destination'])) {
                 throw new \Exception('CSS Update Listener: Destination not found');
             }
-        
+            
             if ($this->isOutOfDate($build['source'], $build['destination'])) {
                 $result = array();
                 if (isset($build['compress'])) {
@@ -132,6 +133,16 @@ class UpdateListener extends AbstractListenerAggregate
         
         $this->compiler = $compiler;
     }
+    
+    public function getInclude()
+    {
+        return $this->include;
+    }
+    
+    public function setInclude($include)
+    {
+        $this->include = $include;
+    }
 
     /**
      * Test is destination file or folder is out of date from the source.
@@ -185,6 +196,9 @@ class UpdateListener extends AbstractListenerAggregate
                     break;
                 case 'builds':
                     $this->setBuilds($value);
+                    break;
+                case 'include':
+                    $this->setInclude($include);
                     break;
             }
         }

@@ -14,7 +14,11 @@ use Zend\Cache\StorageFactory;
 use Zend\Cache\Storage\Adapter\AbstractAdapter as AbstractCacheAdapter;
 
 /**
- *
+ * Base class for CSS Preprocessor. Provides basic configuration, Service
+ * Manager Factory Interface and compile method.
+ * 
+ * Child classes must implement getCommandArguments method and should override
+ * compiler, extensions and configurationKey methods.
  */
 abstract class AbstractCompiler implements FactoryInterface
 {
@@ -63,7 +67,7 @@ abstract class AbstractCompiler implements FactoryInterface
      * 
      * @var string|boolean|null
      */
-    protected $includePath;
+    protected $include;
 
     /**
      * Return command line arguments to compile source file or path. If 
@@ -115,7 +119,7 @@ abstract class AbstractCompiler implements FactoryInterface
     }
 
     /**
-     * Get Compiler Arguments
+     * Get compiler arguments
      * @return array
      */
     public function getArguments()
@@ -124,7 +128,7 @@ abstract class AbstractCompiler implements FactoryInterface
     }
     
     /**
-     * Set Compiler Arguments
+     * Set compiler arguments
      * @param array $arguments
      */
     public function setArguments($arguments)
@@ -132,13 +136,18 @@ abstract class AbstractCompiler implements FactoryInterface
         $this->arguments = (array) $arguments;
     }
     
+    /**
+     * Get cache
+     * 
+     * @return \Zend\Cache\Storage\Adapter\AbstractAdapter
+     */
     public function getCache()
     {
         return $this->cache;
     }
     
     /**
-     * Set Cache for CSS Preprocessor
+     * Set cache for CSS Preprocessor
      * 
      * Cache parameter can be an instance of \Zend\Cache\Storage\Adapter\AbstractAdapter,
      * the name of a cache adapter class or an array of options to be passed
@@ -165,8 +174,9 @@ abstract class AbstractCompiler implements FactoryInterface
     }
     
     /**
-     * getCompiler
-     * @return string Compiler Path
+     * Get compiler path
+     * 
+     * @return string
      */
     public function getCompiler()
     {
@@ -174,7 +184,8 @@ abstract class AbstractCompiler implements FactoryInterface
     }
     
     /**
-     * setCompiler
+     * Set compiler path
+     * 
      * @param string $compiler Compiler Path
      */
     public function setCompiler($compiler)
@@ -222,14 +233,26 @@ abstract class AbstractCompiler implements FactoryInterface
         $this->extensions = $extensions;
     }
     
-    public function getIncludePath()
+    /**
+     * Get compiler include path
+     * 
+     * @return string|boolean|NULL
+     */
+    public function getInclude()
     {
-        return $this->includePath;
+        return $this->include;
     }
     
-    public function setIncludePath($path)
+    /**
+     * Set compiler include path
+     * 
+     * If set to true the source path is used.
+     * 
+     * @param string|boolean|NULL $path
+     */
+    public function setInclude($path)
     {
-        $this->includePath = $path;
+        $this->include = $path;
     }
     
     /**
@@ -271,8 +294,8 @@ abstract class AbstractCompiler implements FactoryInterface
                 case 'extension':
                     $this->setExtension($value);
                     break;
-                case 'includepath':
-                    $this->setIncludePath($value);
+                case 'include':
+                    $this->setInclude($value);
                     break;
             }
         }
@@ -283,14 +306,14 @@ abstract class AbstractCompiler implements FactoryInterface
      * 
      * @param string|null $source
      */
-    protected function findIncludePath($source)
+    protected function findInclude($source)
     {
-        if (true === $this->includePath) {
+        if (true === $this->include) {
             return is_dir($source) ? $source : dirname($source);
         }
         
-        if (is_string($this->includePath)) {
-            return $this->includePath;
+        if (is_string($this->include)) {
+            return $this->include;
         }
         
         return null;

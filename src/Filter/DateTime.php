@@ -1,4 +1,10 @@
 <?php
+/**
+ * Spork Zend Framework 2 Library
+ * 
+ * @author Chris Schreiber <chris@sporkcode.com>
+ */
+
 namespace Spork\Filter;
 
 /**

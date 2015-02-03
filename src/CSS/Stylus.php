@@ -9,11 +9,19 @@
 namespace Spork\CSS;
 
 /**
- *
+ * Wrapper class for Stylus CSS preprocessor (http://learnboost.github.io/stylus/)
+ * 
+ * Looks for stylus executable on system path. You can specify a full path
+ * for the compiler.
+ * 
+ * If the class is created as a Service Manager factory it will look for 
+ * configuration options under 'css-stylus'.
  */
 class Stylus extends AbstractCompiler
 {
-    protected $compiler = '/usr/local/bin/stylus';
+    protected $compiler = 'stylus';
+
+    protected $configurationKey = 'css-stylus';
     
     protected $extensions = array('styl');
     

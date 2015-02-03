@@ -9,11 +9,19 @@
 namespace Spork\CSS;
 
 /**
- *
+ * Wrapper class for Sass CSS preprocessor (http://sass-lang.com/)
+ * 
+ * Looks for sass executable on system path. You can specify a full path for
+ * the compiler.
+ * 
+ * If the class is created as a Service Manager factory it will look for
+ * configuration options under 'css-sass'.
  */
 class Sass extends AbstractCompiler
 {
-    protected $compiler = '/usr/local/bin/sass';
+    protected $compiler = 'sass';
+
+    protected $configurationKey = 'css-sass';
     
     protected $extension = array('sass', 'scss');
     
