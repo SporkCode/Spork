@@ -25,7 +25,7 @@ class Stylus extends AbstractCompiler
     
     protected $extensions = array('styl');
     
-    protected function getCommandArguments($source, $destination = null)
+    protected function getCommandArguments($source, $destination, array $includes)
     {
         $arguments = '';
         
@@ -33,16 +33,15 @@ class Stylus extends AbstractCompiler
             $arguments .= ' --compress';
         }
         
-        $includePath = $this->findIncludePath($source);
-        if (null !== $includePath) {
-            $arguments .= ' --include ' . escapeshellarg($includePath);
+        foreach ($includes as $include) {
+            $arguments .= ' --include ' . escapeshellarg($include);
         }
         
         if (null == $destination) {
             $arguments .= ' --print ' . escapeshellarg($source);
         } else {
             if (is_dir($destination)) {
-                $arguments .= escapeshellarg($source) . ' --out ' . escapeshellarg($destination);
+                $arguments .= ' ' . escapeshellarg($source) . ' --out ' . escapeshellarg($destination);
             } else {
                 $arguments .= ' < ' . escapeshellarg($source) . ' > ' . escapeshellarg($destination);
             }

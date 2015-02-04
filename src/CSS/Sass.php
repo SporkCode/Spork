@@ -25,7 +25,7 @@ class Sass extends AbstractCompiler
     
     protected $extension = array('sass', 'scss');
     
-    protected function getCommandArguments($source, $destination = null)
+    protected function getCommandArguments($source, $destination, array $includes)
     {
         $arguments = '';
         
@@ -33,9 +33,8 @@ class Sass extends AbstractCompiler
             $arguments .= ' --style=compressed';
         }
         
-        $includePath = $this->findIncludePath($source);
-        if (null !== $includePath) {
-            $arguments .= ' --load-path ' . escapeshellarg($includePath);
+        foreach ($includes as $include) {
+            $arguments .= ' --load-path ' . escapeshellarg($include);
         }
         
         $arguments .= ' ' . escapeshellarg($source);

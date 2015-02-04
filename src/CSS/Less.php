@@ -26,7 +26,7 @@ class Less extends AbstractCompiler
     protected $extension = array('less');
     
     
-    protected function getCommandArguments($source, $destination = null)
+    protected function getCommandArguments($source, $destination, array $includes)
     {
         $arguments = '';
         
@@ -34,9 +34,8 @@ class Less extends AbstractCompiler
             $arguments .= ' --compress';
         }
         
-        $includePath = $this->findIncludePath($source);
-        if (null !== $includePath) {
-            $arguments .= ' --include-path ' . escapeshellarg($includePath);
+        if (!empty($includes)) {
+            $arguments .= ' --include-path ' . escapeshellarg(implode(':', $includes));
         }
         
         $arguments .= ' ' . escapeshellarg($source);

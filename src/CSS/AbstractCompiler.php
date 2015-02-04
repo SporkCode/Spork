@@ -62,12 +62,11 @@ abstract class AbstractCompiler implements FactoryInterface
     protected $extensions = array();
     
     /**
-     * Inlude path for compiler to use. It true compiler should use source path
-     * as include path. If false or null no include path is used;
+     * List of inlude paths for compiler to use
      * 
-     * @var string|boolean|null
+     * @var array
      */
-    protected $include;
+    protected $includes = array();
 
     /**
      * Return command line arguments to compile source file or path. If 
@@ -75,20 +74,24 @@ abstract class AbstractCompiler implements FactoryInterface
      *
      * @param string $source Source file or path
      * @param string $destination Destination file or path
+     * @param array $includes List of include paths
      * @return string
      */
-    abstract protected function getCommandArguments($source, $destination = null);
+    abstract protected function getCommandArguments($source, $destination, array $includes);
     
     /**
      * Compile to file. If destination is not specified return CSS.
      * 
      * @param string $source
      * @param string|null $destination 
+     * @param array|string|null $include Include path(s) to use
      * @throws \Exception on compilation error
      * @return string Compiled CSS
      */
-    public function compile($source, $destination = null)
+    public function compile($source, $destination = null, $include = null)
     {
+        $include = array_merge($this->includes, (array) $include);
+        
         $useCache = null == $destination && null !== $this->cache;
          
         if ($useCache) {
@@ -98,7 +101,7 @@ abstract class AbstractCompiler implements FactoryInterface
         }
 
         $arguments = implode(' ', array_map('escapeshellarg', $this->arguments));
-        $arguments .= ' ' . $this->getCommandArguments($source, $destination);
+        $arguments .= ' ' . $this->getCommandArguments($source, $destination, $include);
         
         $command = "{$this->compiler} $arguments" . ' 2>&1'; 
 
@@ -233,14 +236,19 @@ abstract class AbstractCompiler implements FactoryInterface
         $this->extensions = $extensions;
     }
     
+    public function addInclude($include)
+    {
+        $this->includes[] = $include;
+    }
+    
     /**
      * Get compiler include path
      * 
      * @return string|boolean|NULL
      */
-    public function getInclude()
+    public function getIncludes()
     {
-        return $this->include;
+        return $this->includes;
     }
     
     /**
@@ -250,9 +258,12 @@ abstract class AbstractCompiler implements FactoryInterface
      * 
      * @param string|boolean|NULL $path
      */
-    public function setInclude($path)
+    public function setIncludes(array $includes)
     {
-        $this->include = $path;
+        $this->includes = array();
+        foreach ($includes as $include) {
+            $this->addInclude($include);
+        }
     }
     
     /**
@@ -306,18 +317,18 @@ abstract class AbstractCompiler implements FactoryInterface
      * 
      * @param string|null $source
      */
-    protected function findInclude($source)
-    {
-        if (true === $this->include) {
-            return is_dir($source) ? $source : dirname($source);
-        }
+//     protected function findInclude($source)
+//     {
+//         if (true === $this->include) {
+//             return is_dir($source) ? $source : dirname($source);
+//         }
         
-        if (is_string($this->include)) {
-            return $this->include;
-        }
+//         if (is_string($this->include)) {
+//             return $this->include;
+//         }
         
-        return null;
-    }
+//         return null;
+//     }
     
     /**
      * Get options from application configuration

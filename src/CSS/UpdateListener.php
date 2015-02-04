@@ -27,7 +27,7 @@ class UpdateListener extends AbstractListenerAggregate
     
     protected $builds = array();
     
-    protected $include;
+    //protected $include;
     
     public function __construct(array $options = array())
     {
@@ -60,31 +60,35 @@ class UpdateListener extends AbstractListenerAggregate
         }
         
         foreach ($this->builds as $build) {
+            
             if (!isset($build['source'])) {
                 throw new \Exception('CSS Update Listener: Source not set');
             }
             if (!file_exists($build['source'])) {
                 throw new \Exception('CSS Update Listener: Source not found');
             }
+            
             if (!isset($build['destination'])) {
-                $build['destination'] = $build['source'];
+                $build['destination'] = is_file($build['source']) ? 
+                        dirname($build['source']) : $build['source'];
             } elseif (!file_exists($build['destination'])) {
                 throw new \Exception('CSS Update Listener: Destination not found');
             }
             
-            if ($this->isOutOfDate($build['source'], $build['destination'])) {
-                $result = array();
+            if (!array_key_exists('includes', $build)) {
+                $build['includes'] = null;
+            }
+            
+            if ($this->isOutOfDate($build['source'], $build['destination'], $build['includes'])) {
+                $compressReset = null;
                 if (isset($build['compress'])) {
-                    $result['compress'] = $this->compiler->getCompress();
+                    $compressReset = $this->compiler->getCompress();
                     $this->compiler->setCompress($build['compress']);
                 }
-                
-                if (isset($build['includePath'])) {
-                    $result['includePath'] = $this->compiler->getIncludePath();
-                    $this->compiler->setIncludePath($build['includePath']);
+                $this->compiler->compile($build['source'], $build['destination'], $build['includes']);
+                if (null !== $compressReset) {
+                    $this->compiler->setCompress($compressReset);
                 }
-                
-                $this->compiler->compile($build['source'], $build['destination']);
             }
         }
     }
@@ -134,16 +138,47 @@ class UpdateListener extends AbstractListenerAggregate
         $this->compiler = $compiler;
     }
     
-    public function getInclude()
+//     public function getInclude()
+//     {
+//         return $this->include;
+//     }
+    
+//     public function setInclude($include)
+//     {
+//         $this->include = $include;
+//     }
+
+    protected function configure($options)
     {
-        return $this->include;
+        foreach ($options as $key => $value) {
+            switch ($key) {
+                case 'compiler':
+                    $this->setCompiler($value);
+                    break;
+                case 'builds':
+                    $this->setBuilds($value);
+                    break;
+//                 case 'include':
+//                     $this->setInclude($include);
+//                     break;
+            }
+        }
     }
     
-    public function setInclude($include)
+    /**
+     * Get relative key for a file
+     * 
+     * @param string $basepath
+     * @param \SplFileInfo $file
+     */
+    protected function getFileKey($basePath, \SplFileInfo $file)
     {
-        $this->include = $include;
+        $baseLength = strlen(rtrim($basePath, DIRECTORY_SEPARATOR));
+        
+        return substr($file->getPath(), $baseLength) . DIRECTORY_SEPARATOR 
+                . $file->getBasename('.' . $file->getExtension());
     }
-
+    
     /**
      * Test is destination file or folder is out of date from the source.
      * If source is a directory it recursively searches the directories.
@@ -153,9 +188,44 @@ class UpdateListener extends AbstractListenerAggregate
      * @param string $destination
      * @return boolean
      */
-    protected function isOutOfDate($source, $destination)
+    protected function isOutOfDate($source, $destination, array $includes = null)
     {
+        $includes = (array) $includes;
         $extensions = $this->compiler->getExtensions();
+        
+        $sourceFiles = $this->scanDirectory($source, $extensions);
+        $destinationFiles = $this->scanDirectory($destination, array('css'));
+        
+        foreach ($sourceFiles as $key => $file) {
+            if (array_key_exists($key, $destinationFiles)) {
+                if ($file->getMTime() > $destinationFiles[$key]->getMTime()) {
+                    return true;
+                }
+            } else {
+                return true;
+            }
+        }
+        
+        $oldest = time();
+        foreach ($destinationFiles as $file) {
+            $modified = $file->getMTime(); 
+            if ($modified < $oldest) {
+                $oldest = $modified;
+            }
+        }
+        
+        foreach ($includes as $include) {
+            $includeFiles = $this->scanDirectory($include, $extensions);
+            foreach ($includeFiles as $file) {
+                if ($file->getMTime() > $oldest) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+        
+        /*
         
         if (is_dir($source)) {
             $sourceIterator = new \RecursiveIteratorIterator(
@@ -182,25 +252,41 @@ class UpdateListener extends AbstractListenerAggregate
 
         if ($destination->isDir()) {
             $destination = new \SplFileInfo($destination . DIRECTORY_SEPARATOR . $source->getBasename($source->getExtension()) . 'css');
+            if (!$destination->isFile()) {
+                return true;
+            }
         }
         
         return $source->getMTime() > $destination->getMTime();
+        */
     }
     
-    protected function configure($options)
+    /**
+     * Scan a directory and return a list of files with matching extenstions
+     * 
+     * @param string $path Directory path to scan
+     * @param string|array $extensions Match files with these extensions
+     */
+    protected function scanDirectory($path, $extensions)
     {
-        foreach ($options as $key => $value) {
-            switch ($key) {
-                case 'compiler':
-                    $this->setCompiler($value);
-                    break;
-                case 'builds':
-                    $this->setBuilds($value);
-                    break;
-                case 'include':
-                    $this->setInclude($include);
-                    break;
+        if (is_file($path)) {
+            $file = new \SplFileInfo($path);
+            return array($this->getFileKey($file->getPath(), $file) => $file);
+        }
+        
+        $files = array();
+        $extensions = (array) $extensions;
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator(
+                $path, 
+                \FileSystemIterator::SKIP_DOTS 
+                    | \FileSystemIterator::CURRENT_AS_FILEINFO)    
+        );
+        foreach ($iterator as $file) {
+            if (in_array($file->getExtension(), $extensions)) {
+                $files[$this->getFileKey($path, $file)] = $file;
             }
         }
+        return $files;
     }
 }

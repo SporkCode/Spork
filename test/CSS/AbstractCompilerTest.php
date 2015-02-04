@@ -22,7 +22,7 @@ class TestCSS extends AbstractCompiler
     
     protected $configurationKey = 'css-test';
     
-    protected function getCommandArguments($source, $destination = null)
+    protected function getCommandArguments($source, $destination, array $includes)
     {
         return escapeshellarg(md5($source));
     }
