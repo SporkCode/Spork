@@ -181,8 +181,6 @@ class UpdateListener extends AbstractListenerAggregate
     
     /**
      * Test is destination file or folder is out of date from the source.
-     * If source is a directory it recursively searches the directories.
-     * Ignores non source files or folders that do not contain source files.
      *
      * @param string $source
      * @param string $destination
@@ -224,41 +222,6 @@ class UpdateListener extends AbstractListenerAggregate
         }
         
         return false;
-        
-        /*
-        
-        if (is_dir($source)) {
-            $sourceIterator = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($source, 
-                    \FilesystemIterator::KEY_AS_PATHNAME 
-                    | \FilesystemIterator::CURRENT_AS_FILEINFO 
-                    | \FilesystemIterator::SKIP_DOTS)
-            );
-            foreach ($sourceIterator as $file) {
-                if (in_array($file->getExtension(), $extensions)) {
-                    $cssFile = new \SplFileInfo($destination 
-                        . substr($file->getPath(), strlen($source)) 
-                        . DIRECTORY_SEPARATOR . $file->getBasename($file->getExtension()) . 'css');
-                    if (!file_exists($cssFile) || $file->getMTime() > $cssFile->getMTime()) {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-        
-        $source = new \SplFileInfo($source);
-        $destination = new \SplFileInfo($destination);
-
-        if ($destination->isDir()) {
-            $destination = new \SplFileInfo($destination . DIRECTORY_SEPARATOR . $source->getBasename($source->getExtension()) . 'css');
-            if (!$destination->isFile()) {
-                return true;
-            }
-        }
-        
-        return $source->getMTime() > $destination->getMTime();
-        */
     }
     
     /**

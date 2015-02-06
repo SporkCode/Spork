@@ -1,0 +1,110 @@
+Spork/CSS Package
+=================
+
+The CSS package provides tools to integrate CSS preprocessors into a ZF2
+application. It includes compiler classes for [Stylus](http://learnboost.github.io/stylus/),
+[Less](http://lesscss.org/), [Sass](http://sass-lang.com/) and is extendible to
+support addition preprocessors. It also includes an event listen to trigger
+updating CSS files automatically.
+
+Compilers
+---------
+
+### Configuration
+
+Compiler instances can easily be created and configured via a Service Manager
+and application configuration. The Spork Module configuration sets up services
+for each compiler class by default.
+
+From config/module.config.php
+
+```
+	'service_manager' => array(
+		'invokables' => array(
+			'cssLess' => 'Spork\CSS\Less',
+			'cssSass' => 'Spork\CSS\Sass',
+			'cssStylus' => 'Spork\CSS\Stylus',
+		),
+	),
+```
+
+Each compiler instance created by the Service Manager looks for configuration
+options in the application configuration.
+
+Sample configuration
+
+```
+	'css-less' => array(
+		...
+	),
+	'css-sass' => array(
+		...
+	),
+	'css-stylus' => array(
+		'arguments' => array(),
+		'cache' => CACHE_SERVICE_NAME,
+		'compiler' => PATH_TO_EXECUTABLE,
+		'compress' => TRUE | FALSE,
+		'extensions' => array('styl'),
+		'includes' => array(PATH_TO_INCLUDE, ...),
+	),
+```
+
+### Compiling
+
+The compile() function converts source files into CSS
+
+```
+public function compile($source, $destination = null, $include = null)
+```
+
+*$source* specifies the source file or directory path to process
+
+*$destination* specifies the target file or directory. If $source is a directory
+destination must also be a directory. Source and destination can be the same
+directory. If no destination is specified the CSS code is returned as a string.
+
+*$include* specifies directory(s) to search for include files
+
+### Extending
+
+Compiler classes extend AbstractCompiler and must implement the abstract function
+getCommandArguments() which takes the compiler options and creates command line
+arguments.
+
+Event Listen
+------------
+
+The UpdateListener class is an event listen which checks source files and updates
+the CSS when it is out of date.
+
+### Configuration
+
+**Warning**
+It is not recomended to use the update listen on production environments. An 
+easy way to setup the listener in the development environment is to put the
+configuration in the applications local configuration file.
+
+Sample Configuration
+```
+	'css-update' => array(
+		'compiler' => 'cssStylus',
+		'builds' => array(
+			array(
+				'source' => 'path/to/source',
+				'destination' => 'path/to/destination',
+				'includes' => array('path/to/include') // optional
+				'compress' => true // optional
+			),
+		),
+	),
+	'service_manager' => array(
+		'invokables' => array(
+			'cssStylus' => 'Spork\CSS\Stylus',
+			'cssUpdateListener' => 'Spork\CSS\UpdateListener', 
+		),
+	),
+	'listeners' => array(
+		'cssUpdateListener',
+	),
+```
