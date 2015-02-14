@@ -49,7 +49,7 @@ generate the inline style.
 ```
 
 This will look for 'index/page' using the same resolver strategy as the view
-renderer, compile the file into CSS and return it wrapped in a <style> tag. If 
+renderer, compile the file into CSS and return it wrapped in a \<style\> tag. If 
 the resolver strategy includes a TemplatePathStack it will use the appropriate 
 extension to resolve the file ('index/page.styl').
 
