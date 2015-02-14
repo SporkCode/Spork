@@ -66,12 +66,14 @@ directory. If no destination is specified the CSS code is returned as a string.
 
 ### Caching
 
-The compiler will cache results when returning CSS as a string automatically as
-long as a cache has been configured. This is most useful when used in with the 
+The compiler will cache results when returning CSS as a string automatically 
+when a cache has been configured. This is most useful when used in with the 
 [CSS View Helpers](../View/Helper/CSS/README.md).
-To configure a cache include the name of service manager service in the 
-compilers configuration. See example above. You can also enable caching by
-calling the setCache() function.
+
+To configure a cache include the service name of an 
+Zend\Cache\Storage\Adapter\AbstractAdapter instance in the compilers 
+configuration. See example above. You can also enable caching by calling the 
+setCache() function.
 
 Notes:
  - Cache has no effect when a destination file or directory is specified.

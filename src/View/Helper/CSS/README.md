@@ -6,13 +6,13 @@ preprocessor for page specific design without increasing load time overhead
 from loading additional style sheets or adding unnecessary bulk to a global 
 style sheet.  
 
-Each view helper generates inline style sheets by converting a CSS 
+The view helpers generate inline style sheets by converting a CSS 
 preprocessor script such as [Stylus](http://learnboost.github.io/stylus/), 
 [Less](http://lesscss.org/) and [Sass](http://sass-lang.com/) into CSS using
-[Spork\CSS](../../../CSS/README.md) and wrapping it in a \<script\> tag. 
-They use a Zend\View\Resolver to locate script files and by default mimic the
-view renderer's resolver strategy so CSS preprocessor scripts can be organized
-along with view templates.
+a [Spork\CSS](../../../CSS/README.md) compiler and wrapping the CSS in a 
+\<script\> tag. They use a Zend\View\Resolver to locate script files and by 
+default mimic the view renderer's resolver strategy so CSS preprocessor scripts 
+can be organized along with view templates.
 
 Configuration
 -------------
@@ -32,9 +32,10 @@ config/module.config.php
 ```
 
 By default each view helper expects to find a Spork\CSS compiler in the service
-manager. This is also configured by default in the Spork module configuration.
-The compiler can also be configured using the application configuration.
-See [CSS\README.md](../../../CSS/README.md) for more details.
+manager with the same name as the view helper. This is also configured by 
+default in the Spork module configuration. The compiler can also be configured 
+using the application configuration. See [CSS\README.md](../../../CSS/README.md) 
+for more details.
 
 Use
 ---
@@ -53,7 +54,7 @@ renderer, compile the file into CSS and return it wrapped in a \<style\> tag. If
 the resolver strategy includes a TemplatePathStack it will use the appropriate 
 extension to resolve the file ('index/page.styl').
 
-The default compiler and resolver and also be overridden.
+The default compiler and resolver can also be overridden.
 
 ```
 <?php
@@ -66,11 +67,11 @@ The default compiler and resolver and also be overridden.
 ?>
 ```
 
-The compiler can be the name of service manager service or an instance 
-implementing Spork\CSS\AbstractCompiler.
+The compiler can be the name of a service or an instance implementing 
+Spork\CSS\AbstractCompiler.
 
 Caching
 -------
 
-It is highly recommended to configure the compiler to cache results in a 
+It is recommended to configure the compiler to cache results in a 
 production environment. See [CSS\README.md](../../../CSS/README.md) for more details.
