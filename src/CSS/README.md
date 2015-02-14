@@ -67,7 +67,7 @@ directory. If no destination is specified the CSS code is returned as a string.
 ### Caching
 
 The compiler will cache results when returning CSS as a string automatically 
-when a cache has been configured. This is most useful when used in with the 
+when a cache has been configured. This is most useful when used with the 
 [CSS View Helpers](../View/Helper/CSS/README.md).
 
 To configure a cache include the service name of an 
