@@ -9,7 +9,7 @@ style sheet.
 Each view helper generates inline style sheets by converting a CSS 
 preprocessor script such as [Stylus](http://learnboost.github.io/stylus/), 
 [Less](http://lesscss.org/) and [Sass](http://sass-lang.com/) into CSS using
-[Spork\CSS](../../../CSS/README.md) and wrapping it in a <script> tag. 
+[Spork\CSS](../../../CSS/README.md) and wrapping it in a \<script\> tag. 
 They use a Zend\View\Resolver to locate script files and by default mimic the
 view renderer's resolver strategy so CSS preprocessor scripts can be organized
 along with view templates.
