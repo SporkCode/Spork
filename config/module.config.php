@@ -9,18 +9,21 @@ return array(
     'service_manager' => array(
         'abstract_factories' => array(),
         'aliases' => array(),
-        'invokables' => array(
+        'factories' => array(
             'cssLess' => 'Spork\CSS\Less',
             'cssSass' => 'Spork\CSS\Sass',
             'cssStylus' => 'Spork\CSS\Stylus',
         ),
+        'invokables' => array(),
     ),
     'view_helpers' => array(
         'invokables' => array(
             'date' => 'Spork\View\Helper\Date',
             'headScript' => 'Spork\View\Helper\HeadScript',
             'inlineScript' => 'Spork\View\Helper\InlineScript',
-            'styleStylus' => 'Spork\View\Helper\Style\Stylus',
+            'cssLess' => 'Spork\View\Helper\CSS\Less',
+            'cssSass' => 'Spork\View\Helper\CSS\Sass',
+            'cssStylus' => 'Spork\View\Helper\CSS\Stylus',
             'timeElapsed' => 'Spork\View\Helper\TimeElapsed'
         ),
         'factories' => array(

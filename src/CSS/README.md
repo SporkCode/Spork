@@ -1,5 +1,5 @@
-Spork/CSS Package
-=================
+Spork\CSS
+=========
 
 The CSS package provides tools to integrate CSS preprocessors into a ZF2
 application. It includes compiler classes for [Stylus](http://learnboost.github.io/stylus/),
@@ -16,11 +16,10 @@ Compiler instances can easily be created and configured via a Service Manager
 and application configuration. The Spork Module configuration sets up services
 for each compiler class by default.
 
-From config/module.config.php
-
+config/module.config.php
 ```
 	'service_manager' => array(
-		'invokables' => array(
+		'factories' => array(
 			'cssLess' => 'Spork\CSS\Less',
 			'cssSass' => 'Spork\CSS\Sass',
 			'cssStylus' => 'Spork\CSS\Stylus',
@@ -32,14 +31,7 @@ Each compiler instance created by the Service Manager looks for configuration
 options in the application configuration.
 
 Sample configuration
-
 ```
-	'css-less' => array(
-		...
-	),
-	'css-sass' => array(
-		...
-	),
 	'css-stylus' => array(
 		'arguments' => array(),
 		'cache' => CACHE_SERVICE_NAME,
@@ -47,6 +39,12 @@ Sample configuration
 		'compress' => TRUE | FALSE,
 		'extensions' => array('styl'),
 		'includes' => array(PATH_TO_INCLUDE, ...),
+	),
+	'css-less' => array(
+		...
+	),
+	'css-sass' => array(
+		...
 	),
 ```
 
@@ -65,6 +63,20 @@ destination must also be a directory. Source and destination can be the same
 directory. If no destination is specified the CSS code is returned as a string.
 
 *$include* specifies directory(s) to search for include files
+
+### Caching
+
+The compiler will cache results when returning CSS as a string automatically as
+long as a cache has been configured. This is most useful when used in with the 
+[CSS View Helpers](../View/Helper/CSS/README.md).
+To configure a cache include the name of service manager service in the 
+compilers configuration. See example above. You can also enable caching by
+calling the setCache() function.
+
+Notes:
+ - Cache has no effect when a destination file or directory is specified.
+ - The cache will not refresh automatically when the source is updated and must
+ be flushed.
 
 ### Extending
 

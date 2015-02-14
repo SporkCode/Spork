@@ -313,24 +313,6 @@ abstract class AbstractCompiler implements FactoryInterface
     }
     
     /**
-     * Get include path based on include path property and source paramater
-     * 
-     * @param string|null $source
-     */
-//     protected function findInclude($source)
-//     {
-//         if (true === $this->include) {
-//             return is_dir($source) ? $source : dirname($source);
-//         }
-        
-//         if (is_string($this->include)) {
-//             return $this->include;
-//         }
-        
-//         return null;
-//     }
-    
-    /**
      * Get options from application configuration
      * 
      * @param ServiceLocatorInterface $services
