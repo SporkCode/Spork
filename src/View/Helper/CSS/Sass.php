@@ -10,7 +10,7 @@ namespace Spork\View\Helper\CSS;
 /**
  * Convert Sass (http://sass-lang.com/) scripts into inline style sheets
  */
-class Stylus extends AbstractHelper
+class Sass extends AbstractHelper
 {
     protected $compiler = 'cssSass';
 }

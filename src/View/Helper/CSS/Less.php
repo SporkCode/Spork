@@ -10,7 +10,7 @@ namespace Spork\View\Helper\CSS;
 /**
  * Convert Less (http://lesscss.org/) scripts into inline style sheets
  */
-class Stylus extends AbstractHelper
+class Less extends AbstractHelper
 {
     protected $compiler = 'cssLess';
 }
