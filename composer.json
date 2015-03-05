@@ -1,0 +1,13 @@
+{
+	"name": "spork/spork",
+	"description": "Zend Framework 2 extension library",
+	"type": "library",
+	"keywords": ["PHP", "ZF2", "Spork"],
+	"homepage": "https://github.com/SporkCode/Spork",
+	"license": "MIT",
+	"authors": [{
+		"name": "Chris Schreiber",
+		"homepage": "http://sporkcode.com"}],
+	"support": {
+		"issues": "https://github.com/SporkCode/Spork/issues",
+		"source": "https://github.com/SporkCode/Spork"}}
