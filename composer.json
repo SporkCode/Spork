@@ -1,5 +1,5 @@
 {
-	"name": "spork/spork",
+	"name": "sporkcode/spork",
 	"description": "Zend Framework 2 extension library",
 	"type": "library",
 	"keywords": ["PHP", "ZF2", "Spork"],
@@ -10,4 +10,7 @@
 		"homepage": "http://sporkcode.com"}],
 	"support": {
 		"issues": "https://github.com/SporkCode/Spork/issues",
-		"source": "https://github.com/SporkCode/Spork"}}
+		"source": "https://github.com/SporkCode/Spork"}},
+	"require": {
+        "php": ">=5.3.0",
+        "zendframework/zendframework": ">=2.2.0"}
