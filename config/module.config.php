@@ -24,7 +24,8 @@ return array(
             'cssLess' => 'Spork\View\Helper\CSS\Less',
             'cssSass' => 'Spork\View\Helper\CSS\Sass',
             'cssStylus' => 'Spork\View\Helper\CSS\Stylus',
-            'timeElapsed' => 'Spork\View\Helper\TimeElapsed'
+            'tagTrim' => 'Spork\View\Helper\TagTrim',
+            'timeElapsed' => 'Spork\View\Helper\TimeElapsed',
         ),
         'factories' => array(
             'dojo' => 'Spork\View\Helper\Dojo',
