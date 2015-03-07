@@ -305,8 +305,8 @@ abstract class AbstractCompiler implements FactoryInterface
                 case 'extension':
                     $this->setExtension($value);
                     break;
-                case 'include':
-                    $this->setInclude($value);
+                case 'includes':
+                    $this->setIncludes($value);
                     break;
             }
         }
