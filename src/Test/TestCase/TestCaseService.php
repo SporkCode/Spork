@@ -20,6 +20,10 @@ abstract class TestCaseService extends TestCase
 {
     use \Spork\ServiceManager\ServicesAwareTrait;
     
+    protected $config;
+    
+    protected $configPath = 'config/application.config.php';
+    
     /**
      * Should services be cloned from prototype or created from scratch. This
      * is experimental and should be used with caution.
@@ -49,7 +53,7 @@ abstract class TestCaseService extends TestCase
             
             $this->services = clone self::$serviceManagerPrototype;
         } else {
-            $config = require 'config/application.config.php';
+            $config = $this->config ?: require $this->configPath;
             $this->services = new ServiceManager(
                 new ServiceManagerConfig(
                     isset($config['service_manager']) ?

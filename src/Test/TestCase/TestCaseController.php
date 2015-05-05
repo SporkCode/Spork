@@ -301,7 +301,7 @@ class TestCaseController extends TestCaseDb
 	protected function setAuthMember($member)
 	{
 		$auth = $this->getServiceManager()->get('auth');
-		$auth->authenticate(new \Itt\Lib\Authentication\Adapter\Dummy($member));
+		$auth->authenticate(new \Itt\Authentication\Adapter\Dummy($member));
 	}
 
 	/**
