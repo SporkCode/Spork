@@ -17,12 +17,12 @@ class Icalendar extends AbstractListenerAggregate
             'Zend\View\View', 
             ViewEvent::EVENT_RENDERER, 
             array($this, 'renderer'),
-            2);
+            100);
         $this->listeners[] = $sharedEvents->attach(
             'Zend\View\View', 
             ViewEvent::EVENT_RESPONSE, 
             array($this, 'response'),
-            2);
+            100);
     }
     
     public function renderer(ViewEvent $event)
