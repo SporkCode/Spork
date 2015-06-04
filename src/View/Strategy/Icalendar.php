@@ -28,7 +28,11 @@ class Icalendar extends AbstractListenerAggregate
     {
         $model = $event->getModel();
         if ($model instanceof IcalendarViewModel) {
-            return new IcalendarRenderer();
+            $renderer = new IcalendarRenderer();
+            if (null !== ($ignoreTimezone = $model->getOption('ignoreTimezone'))) {
+                $renderer->ignoreTimezone($ignoreTimezone);
+            }
+            return $renderer;
         }
     }
     

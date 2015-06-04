@@ -7,6 +7,8 @@ use Zend\View\Resolver\ResolverInterface;
 
 class Icalendar implements RendererInterface
 {
+    protected $ignoreTimezone = false;
+    
     protected $calendar = array(
         'name' => 'VCALENDAR',
         'properties' => array(
@@ -144,6 +146,16 @@ class Icalendar implements RendererInterface
         'tzurl',
     );
     
+    public function ignoreTimezone($flag = true)
+    {
+        $this->ignoreTimezone = (boolean) $flag;
+    }
+    
+    public function getIgnoreTimezone()
+    {
+        return $this->ignoreTimezone;
+    }
+    
     public function getEngine()
     {
         return $this;
@@ -220,6 +232,11 @@ class Icalendar implements RendererInterface
             throw new \Exception('Invalid date time');
         }
         
-        return $datetime->format('Ymd\Tgis\Z');
+        if ($this->ignoreTimezone) {
+            return $datetime->format('Ymd\THis');
+        }
+        
+        $datetime->setTimezone(new \DateTimeZone('UTC'));
+        return $datetime->format('Ymd\This\Z');
     }
 }
