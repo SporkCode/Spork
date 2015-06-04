@@ -3,17 +3,10 @@ namespace Spork\view\Renderer;
 
 use Zend\View\Renderer\RendererInterface;
 use Zend\View\Model\ModelInterface;
+use Zend\View\Resolver\ResolverInterface;
 
 class Icalendar implements RendererInterface
 {
-    public $events = 'events';
-    
-    public $todos = 'todos';
-    
-    public $journals = 'journals';
-    
-    public $freebusy = 'freebusy';
-    
     protected $calendar = array(
         'name' => 'VCALENDAR',
         'properties' => array(
@@ -22,6 +15,8 @@ class Icalendar implements RendererInterface
             'prodid',
             'version',
             'x-prop',
+            
+            'events' => array('component' => 'event')
         )
     );
     
@@ -149,6 +144,16 @@ class Icalendar implements RendererInterface
         'tzurl',
     );
     
+    public function getEngine()
+    {
+        return $this;
+    }
+    
+    public function setResolver(ResolverInterface $resolver)
+    {
+        
+    }
+    
     public function render($nameOrModel, $values = null)
     {
         if (null == $values && $nameOrModel instanceof ModelInterface) {
@@ -161,43 +166,13 @@ class Icalendar implements RendererInterface
             $values['prodid'] = '-//SporkCode//Spork//iCalendar//EN';
         }
         
-        $output = null;
-        
-        if (isset($values['events'])) {
-            foreach ($values['events'] as $event) {
-                $output .= $this->renderComponent('event', $event);
-            }
-        }
-        
-        if (isset($values['todos'])) {
-            foreach ($values['todos'] as $todo) {
-                $output .= $this->renderComponent('todo' ,$todo);
-            }
-        }
-
-        if (isset($values['journals'])) {
-            foreach ($values['journals'] as $journal) {
-                $output .= $this->renderComponent('journal' ,$journal);
-            }
-        }
-
-        if (isset($values['freebusy'])) {
-            foreach ($values['freebusy'] as $freebusy) {
-                $output .= $this->renderComponent('freebusy' ,$freebusy);
-            }
-        }
-
-        if (isset($values['timezones'])) {
-            foreach ($values['timezones'] as $timezone) {
-                $output .= $this->renderComponent('timezone' ,$timezone);
-            }
-        }
-        
-        if (null === $output) {
+        if (!isset($values['events']) && !isset($values['todos']) 
+                && !isset($values['journals']) && !isset($values['freebusy']) 
+                && !isset($values['freebusy']) && !isset($values['timezones'])) {
             throw new \Exception('iCalendar requires at least one event, todo, journal, freebusy or timezone component');
         }
         
-        $output = $this->renderComponent('calendar', $output);
+        $output = $this->renderComponent('calendar', $values);
         return $output;
     }
     
@@ -215,6 +190,12 @@ class Icalendar implements RendererInterface
                 }
                 if (isset($values[$name])) {
                     $value = $values[$name];
+                    if (isset($options['component'])) {
+                        foreach ($value as $component) {
+                            $output .= $this->renderComponent($options['component'], $component);
+                        }
+                        continue;
+                    }
                     if (isset($options['filter'])) {
                         $value = call_user_func(array($this, $options['filter']), $value);
                     }
