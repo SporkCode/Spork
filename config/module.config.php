@@ -14,7 +14,9 @@ return array(
             'cssSass' => 'Spork\CSS\Sass',
             'cssStylus' => 'Spork\CSS\Stylus',
         ),
-        'invokables' => array(),
+        'invokables' => array(
+            'IcalendarViewStrategy' => 'Spork\View\Strategy\Icalendar',
+        ),
     ),
     'view_helpers' => array(
         'invokables' => array(
