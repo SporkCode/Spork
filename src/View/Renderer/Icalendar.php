@@ -18,6 +18,11 @@ class Icalendar implements RendererInterface
             'version',
             'x-prop',
             
+            'x-wr-calname',
+            'x-wr-caldesc',
+            'x-wr-relcalid',
+            'x-wr-timezone',
+            
             'events' => array('component' => 'event')
         )
     );
@@ -31,7 +36,7 @@ class Icalendar implements RendererInterface
             'class',
             'comment',
             'contact',
-            'create',
+            'created' => array('filter' => 'formatDateTime'),
             'description',
             'dtend' => array('filter' => 'formatDateTime'),
             'dtstamp' => array('filter' => 'formatDateTime'),
@@ -40,7 +45,7 @@ class Icalendar implements RendererInterface
             'exdate',
             'exrule',
             'geo',
-            'last-mod',
+            'last-modified' => array('filter' => 'formatDateTime'),
             'location',
             'organizer',
             'priority',
@@ -68,7 +73,7 @@ class Icalendar implements RendererInterface
         'comment',
         'completed',
         'contact',
-        'created',
+        'created' => array('filter' => 'formatDateTime'),
         'description',
         'dtstamp' => array('filter' => 'formatDateTime'),
         'dtstart' => array('filter' => 'formatDateTime'),
@@ -77,10 +82,10 @@ class Icalendar implements RendererInterface
         'exdate',
         'exrule',
         'geo',
-        'last-mod',
+        'last-modified' => array('filter' => 'formatDateTime'),
         'location',
         'organizer',
-        'percent',
+        'percent-complete',
         'priority',
         'rdate',
         'recurid',
@@ -103,13 +108,13 @@ class Icalendar implements RendererInterface
         'class',
         'comment',
         'contact',
-        'created',
+        'created' => array('filter' => 'formatDateTime'),
         'description',
         'dtstamp' => array('filter' => 'formatDateTime'),
         'dtstart' => array('filter' => 'formatDateTime'),
         'exdate',
         'exrule',
-        'last-mod',
+        'last-modified' => array('filter' => 'formatDateTime'),
         'organizer',
         'rdate',
         'recurid',
@@ -141,8 +146,10 @@ class Icalendar implements RendererInterface
     );
     
     protected $timezone = array(
-        'last-mod',
+        'last-modified',
         'tzid',
+        'tzoffsetfrom',
+        'tzoffsetto',
         'tzurl',
     );
     
@@ -192,27 +199,24 @@ class Icalendar implements RendererInterface
     {
         $meta = $this->$name;
         $output = 'BEGIN:' . $meta['name'] . "\r\n";
-        if (is_string($values)) {
-            $output .= $values;
-        } else {
-            foreach ($meta['properties'] as $name => $options) {
-                if (is_string($options)) {
-                    $name = $options;
-                    $options = array();
-                }
-                if (isset($values[$name])) {
-                    $value = $values[$name];
-                    if (isset($options['component'])) {
-                        foreach ($value as $component) {
-                            $output .= $this->renderComponent($options['component'], $component);
-                        }
-                        continue;
+        $values['dtstamp'] = new \DateTime();
+        foreach ($meta['properties'] as $name => $options) {
+            if (is_string($options)) {
+                $name = $options;
+                $options = array();
+            }
+            if (isset($values[$name])) {
+                $value = $values[$name];
+                if (isset($options['component'])) {
+                    foreach ($value as $component) {
+                        $output .= $this->renderComponent($options['component'], $component);
                     }
-                    if (isset($options['filter'])) {
-                        $value = call_user_func(array($this, $options['filter']), $value);
-                    }
-                    $output .= strtoupper($name) . ':' . $value . "\r\n";
+                    continue;
                 }
+                if (isset($options['filter'])) {
+                    $value = call_user_func(array($this, $options['filter']), $value);
+                }
+                $output .= strtoupper($name) . ':' . $value . "\r\n";
             }
         }
         $output .= 'END:' . $meta['name'] . "\r\n";
