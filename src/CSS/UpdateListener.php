@@ -71,8 +71,26 @@ class UpdateListener extends AbstractListenerAggregate
             if (!isset($build['destination'])) {
                 $build['destination'] = is_file($build['source']) ? 
                         dirname($build['source']) : $build['source'];
-            } elseif (!file_exists($build['destination'])) {
-                throw new \Exception('CSS Update Listener: Destination not found');
+            }
+            
+            if (file_exists($build['destination'])) {
+                if (!is_writable($build['destination'])) {
+                    throw new \Exception(sprintf(
+                        'CSS Update Listener: Cannot write to destination (%s)',
+                        $build['destination']));
+                }
+            } else {
+                $parts = pathinfo($build['destination']);
+                if (!isset($parts['basename'])) {
+                    throw new \Exception(sprintf(
+                        'CSS Update Listener: Destination not found (%s)',
+                        $build['destination']));
+                }
+                if (!is_writable($parts['dirname'])) {
+                    throw new \Exception(sprintf(
+                        'CSS Update Listener: Cannot write to destination folder (%s)',
+                        $parts['dirname']));
+                }
             }
             
             if (!array_key_exists('includes', $build)) {
@@ -190,6 +208,10 @@ class UpdateListener extends AbstractListenerAggregate
     {
         $includes = (array) $includes;
         $extensions = $this->compiler->getExtensions();
+        
+        if (!file_exists($source) || !file_exists($destination)) {
+            return true;
+        }
         
         $sourceFiles = $this->scanDirectory($source, $extensions);
         $destinationFiles = $this->scanDirectory($destination, array('css'));
