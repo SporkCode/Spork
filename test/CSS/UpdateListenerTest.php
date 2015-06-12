@@ -15,6 +15,7 @@ use Zend\Mvc\MvcEvent;
 use Zend\Mvc\Application;
 use Zend\ServiceManager\ServiceManager;
 use Zend\EventManager\EventManager;
+use Spork\CSS\Spork\CSS;
 
 class TestCompiler extends AbstractCompiler
 {
@@ -62,101 +63,106 @@ class UpdateListenerTest extends TestCase
     
     protected $tempdir;
     
-    /**
-     * Test scanning build where source and destination are same directory
-     */
-    public function testDirectory()
+    public function testEmptyDirectory()
     {
-        $source = $this->creatTempDirectory('source');
+        $source = $this->createTempDirectory('source');
         
-        $listener = $this->listener;
-        $listener->setBuilds(array($source));
-        $event = $this->getEvent();
+        $this->assertNotCompile($source);
+    }
+    
+    public function testNewSource()
+    {
+        $source = $this->createTempDirectory('source');
         
-        // do nothing on folder without source files
-        $this->assertFalse($listener->updateCSS($event));
-        
-        // update on new source file
         touch($source . DIRECTORY_SEPARATOR . 'code1.src');
-        $this->assertTrue($listener->updateCSS($event));
+
+        $this->assertCompile($source);
+    }
+    
+    public function testUpToDate()
+    {
+        $source = $this->createTempDirectory('source');
         
-        // target up to date
+        touch($source . DIRECTORY_SEPARATOR . 'code1.src');
         touch($source . DIRECTORY_SEPARATOR . 'code1.css');
-        $this->assertFalse($listener->updateCSS($event));
         
-        // update new source in sub folder
+        $this->assertNotCompile($source);
+    }
+    
+    public function testUpdated()
+    {
+        $source = $this->createTempDirectory('source');
+        
+        touch($source . DIRECTORY_SEPARATOR . 'code1.src');
+        touch($source . DIRECTORY_SEPARATOR . 'code1.css', time() - 60);
+        
+        $this->assertCompile($source);
+    }
+    
+    public function testSubFolder()
+    {
+        $source = $this->createTempDirectory('source');
+        
         touch($source . DIRECTORY_SEPARATOR . 'folder2' . DIRECTORY_SEPARATOR . 'code2.src');
-        $this->assertTrue($listener->updateCSS($event));
         
-        // target up to date
+        $this->assertCompile($source);
+    }
+    
+    public function testSubFolderUpToDate()
+    {
+        $source = $this->createTempDirectory('source');
+        
+        touch($source . DIRECTORY_SEPARATOR . 'folder2' . DIRECTORY_SEPARATOR . 'code2.src');
         touch($source . DIRECTORY_SEPARATOR . 'folder2' . DIRECTORY_SEPARATOR . 'code2.css');
-        $this->assertFalse($listener->updateCSS($event));
         
-        // update on changed
-        touch($source . DIRECTORY_SEPARATOR . 'folder2' . DIRECTORY_SEPARATOR . 'code2.css', time() - 10);
-        $this->assertTrue($listener->updateCSS($event));
+        $this->assertNotCompile($source);
     }
     
     /**
      * Test scanning build where source and destination are different directories 
      */
-    public function testDestinationDirectory()
+    public function testSeparateDestination()
     {
-        $source = $this->creatTempDirectory('source');
-        $destination = $this->creatTempDirectory('destination');
-        $event = $this->getEvent();
+        $source = $this->createTempDirectory('source');
+        $destination = $this->createTempDirectory('destination');
         
-        $listener = $this->listener;
-        $listener->setBuilds(array(array('source' => $source, 'destination' => $destination)));
-        
-        // Do nothing on no source files
-        $this->assertFalse($listener->updateCSS($event));
-        
-        // New source
         touch($source . DIRECTORY_SEPARATOR . 'code1.src');
-        $this->assertTrue($listener->updateCSS($event));
         
-        // Target up to date
-        touch($destination . DIRECTORY_SEPARATOR . 'code1.css');
-        $this->assertFalse($listener->updateCSS($event));
-        
-        // New source in sub folder
-        touch($source . DIRECTORY_SEPARATOR . 'folder1' . DIRECTORY_SEPARATOR . 'code2.src');
-        $this->assertTrue($listener->updateCSS($event));
-        
-        // Target up to date
-        touch($destination . DIRECTORY_SEPARATOR . 'folder1' . DIRECTORY_SEPARATOR . 'code2.css');
-        $this->assertFalse($listener->updateCSS($event));
-        
-        // Target out of date
-        touch($destination . DIRECTORY_SEPARATOR . 'code1.css', time() - 2);
-        $this->assertTrue($listener->updateCSS($event));
+        $this->assertCompile($source, $destination);
     }
     
     /**
-     * Test scanning where source is single file 
+     * Test separate destination folder with up to date files 
      */
-    public function testUpdateFile()
+    public function testSeparateDestinationUpToDate()
     {
-        $sourceDir = $this->creatTempDirectory('source');
+        $source = $this->createTempDirectory('source');
+        $destination = $this->createTempDirectory('destination');
+        
+        touch($source . DIRECTORY_SEPARATOR . 'code1.src');
+        touch($destination . DIRECTORY_SEPARATOR . 'code1.css');
+        
+        $this->assertNotCompile($source, $destination);
+    }
+    
+    public function testSourceFile()
+    {
+        $sourceDir = $this->createTempDirectory('source');
         $source = $sourceDir . DIRECTORY_SEPARATOR . 'code.src';
         
-        $listener = $this->listener;
-        $listener->addBuild($source);
-        
-        $event = $this->getEvent();
-        
-        // Target does not exist
         touch($source);
-        $this->assertTrue($listener->updateCSS($event));
+        $this->assertCompile($source);
+    }
+    
+    public function testSourceFileUpToDate()
+    {
+        $sourceDir = $this->createTempDirectory('source');
+        $source = $sourceDir . DIRECTORY_SEPARATOR . 'code.src';
         
-        // Target update to date
+        touch($source);
         touch($sourceDir . DIRECTORY_SEPARATOR . 'code.css');
-        $this->assertFalse($listener->updateCSS($event));
         
-        // Target out of date
-        touch($sourceDir . DIRECTORY_SEPARATOR . 'code.css', time() - 2);
-        $this->assertTrue($listener->updateCSS($event));
+        $this->assertNotCompile($source);
     }
     
     /**
@@ -164,29 +170,26 @@ class UpdateListenerTest extends TestCase
      */
     public function testInclude()
     {
-        $source = $this->creatTempDirectory('source');
-        touch($source . DIRECTORY_SEPARATOR . 'code.src', time() - 1);
-        touch($source . DIRECTORY_SEPARATOR . 'code.css', time() - 1);
-        $include = $this->creatTempDirectory('include');
+        $source = $this->createTempDirectory('source');
+        $include = $this->createTempDirectory('include');
         
-        $listener = $this->listener;
-        $listener->addBuild(array(
-            'source' => $source,
-            'includes' => array($include),
-        ));
-        
-        $event = $this->getEvent();
-        
-        // Source empty
-        $this->assertFalse($listener->updateCSS($event));
-        
-        // Include updated
-        touch($include . DIRECTORY_SEPARATOR . 'include.src');
-        $this->assertTrue($listener->updateCSS($event));
-        
-        // target up to date
+        touch($include . DIRECTORY_SEPARATOR . 'include.src', time() - 60);
+        touch($source . DIRECTORY_SEPARATOR . 'code.src');
         touch($source . DIRECTORY_SEPARATOR . 'code.css');
-        $this->assertFalse($listener->updateCSS($event));
+        
+        $this->assertNotCompile($source, null, $include);
+    }
+    
+    public function testIncludeUpToDate()
+    {
+        $source = $this->createTempDirectory('source');
+        $include = $this->createTempDirectory('include');
+        
+        touch($include . DIRECTORY_SEPARATOR . 'include.src');
+        touch($source . DIRECTORY_SEPARATOR . 'code.src');
+        touch($source . DIRECTORY_SEPARATOR . 'code.css');
+        
+        $this->assertNotCompile($source, null, $include);
     }
     
     protected function setUp()
@@ -196,7 +199,12 @@ class UpdateListenerTest extends TestCase
         mkdir($this->tempdir);
         
         // Initialize listener
-        $this->listener = new TestUpdateListener();
+        //$this->listener = new TestUpdateListener();
+        $compiler = $this->getMockBuilder('Spork\CSS\Less')->getMock();
+        $compiler->method('getExtensions')->willReturn(array('src'));
+        
+        $this->listener = new UpdateListener();
+        $this->listener->setCompiler($compiler);
     }
     
     protected function tearDown()
@@ -215,7 +223,25 @@ class UpdateListenerTest extends TestCase
         rmdir($this->tempdir);
     }
     
-    protected function creatTempDirectory($name)
+    protected function assertCompile($source, $destination = null, $include = null, $compile = true)
+    {
+        if (null === $destination) {
+            $this->listener->setBuilds(array($source));
+        } else {
+            $this->listener->setBuilds(array(
+                array('source' => $source, 'destination' => $destination)));
+        }
+        $this->listener->getCompiler()->expects(
+            $compile ? $this->once() : $this->never())->method('compile');
+        $this->listener->updateCSS($this->getEvent());
+    }
+    
+    protected function assertNotCompile($source, $destination = null, $include = null)
+    {
+        $this->assertCompile($source, $destination, $include, false);
+    }
+    
+    protected function createTempDirectory($name)
     {
         $directory = $this->tempdir . DIRECTORY_SEPARATOR . $name;
         mkdir($directory);
