@@ -98,15 +98,23 @@ class UpdateListener extends AbstractListenerAggregate
             }
             
             if ($this->isOutOfDate($build['source'], $build['destination'], $build['includes'])) {
-                $compressReset = null;
+                $compiler = clone $this->compiler;
                 if (isset($build['compress'])) {
-                    $compressReset = $this->compiler->getCompress();
-                    $this->compiler->setCompress($build['compress']);
+                    $compiler->setCompress($build['compress']);
                 }
-                $this->compiler->compile($build['source'], $build['destination'], $build['includes']);
-                if (null !== $compressReset) {
-                    $this->compiler->setCompress($compressReset);
+                if (isset($build['arguments'])) {
+                    $compiler->setArguments($build['arguments']);
                 }
+                $compiler->compile($build['source'], $build['destination'], $build['includes']);
+//                 $compressReset = null;
+//                 if (isset($build['compress'])) {
+//                     $compressReset = $this->compiler->getCompress();
+//                     $this->compiler->setCompress($build['compress']);
+//                 }
+//                 $this->compiler->compile($build['source'], $build['destination'], $build['includes']);
+//                 if (null !== $compressReset) {
+//                     $this->compiler->setCompress($compressReset);
+//                 }
             }
         }
     }
@@ -209,35 +217,44 @@ class UpdateListener extends AbstractListenerAggregate
         $includes = (array) $includes;
         $extensions = $this->compiler->getExtensions();
         
-        if (!file_exists($source) || !file_exists($destination)) {
+        if (!file_exists($destination)) {
             return true;
         }
         
-        $sourceFiles = $this->scanDirectory($source, $extensions);
-        $destinationFiles = $this->scanDirectory($destination, array('css'));
+        if (is_file($source) && is_file($destination)) {
+            $sourceFiles = array(new \SplFileInfo($source));
+            $destinationFiles = array(new \SplFileInfo($destination));
+        } else {
+            $sourceFiles = $this->scanDirectory($source, $extensions);
+            $destinationFiles = $this->scanDirectory($destination, array('css'));
+        }
         
+        $youngest = time();
         foreach ($sourceFiles as $key => $file) {
             if (array_key_exists($key, $destinationFiles)) {
                 if ($file->getMTime() > $destinationFiles[$key]->getMTime()) {
                     return true;
+                }
+                if ($file->getMTime() < $youngest) {
+                    $youngest = $file->getMTime();
                 }
             } else {
                 return true;
             }
         }
         
-        $oldest = time();
-        foreach ($destinationFiles as $file) {
-            $modified = $file->getMTime(); 
-            if ($modified < $oldest) {
-                $oldest = $modified;
-            }
-        }
+//         $oldest = time();
+//         foreach ($destinationFiles as $file) {
+//             $modified = $file->getMTime(); 
+//             if ($modified < $oldest) {
+//                 $oldest = $modified;
+//             }
+//         }
         
         foreach ($includes as $include) {
             $includeFiles = $this->scanDirectory($include, $extensions);
             foreach ($includeFiles as $file) {
-                if ($file->getMTime() > $oldest) {
+                if ($file->getMTime() > $youngest) {
                     return true;
                 }
             }
