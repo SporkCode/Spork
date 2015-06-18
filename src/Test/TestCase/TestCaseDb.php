@@ -143,7 +143,15 @@ class TestCaseDb extends TestCaseService
         }
         $createTable = preg_replace('/ENGINE=\w+/', 'ENGINE=Memory',
             $createTable, 1);
-        $createTable = preg_replace('`\stext(\s|,)`i', ' varchar(512)$1',
+        $createTable = preg_replace(
+            array(
+                '`\s(tiny|medium|long)?text(\s|,)`i',
+                '`\s(tiny|medium|long)?blob(\s|,)`i',
+            ),
+            array(
+                ' varchar(512)$2',
+                ' varbinary(512)$2',
+            ),
             $createTable);
         $dest->query($createTable, Adapter::QUERY_MODE_EXECUTE);
     }
