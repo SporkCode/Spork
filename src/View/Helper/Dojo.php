@@ -88,9 +88,10 @@ class Dojo extends \Zend\View\Helper\AbstractHelper
     /**
      * Dojo source path
      * 
+     * @example '/js/dojo/dojo.js'
      * @var string
      */
-    protected $src = '/dojo/dojo/dojo.js';
+    protected $src = '//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/dojo.js';
     
     /**
      * Initialize and configure instance
