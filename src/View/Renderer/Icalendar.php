@@ -1,5 +1,5 @@
 <?php
-namespace Spork\view\Renderer;
+namespace Spork\View\Renderer;
 
 use Zend\View\Renderer\RendererInterface;
 use Zend\View\Model\ModelInterface;
