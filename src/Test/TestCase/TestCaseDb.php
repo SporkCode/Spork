@@ -26,18 +26,25 @@ use Zend\Db\Sql\Expression;
 class TestCaseDb extends TestCaseService
 {
     /**
-     * Has database been initialized
-     * 
-     * @var boolean
-     */
-    protected static $dbInitialized = false;
-    
-    /**
      * Database adapter
      * 
      * @var \Zend\Db\Adapter\AdapterInterface
      */
     protected static $dbAdapter;
+    
+    /**
+     * Name of database adapter service
+     * 
+     * @var string
+     */
+    protected static $dbAdapterName = 'db';
+    
+    /**
+     * Are database table temporary or static
+     * 
+     * @var boolean
+     */
+    protected static $dbTemporary;
 
     /**
      * Assert that a table has specified number for rows
@@ -67,6 +74,11 @@ class TestCaseDb extends TestCaseService
         $actual = $table->selectWith($select)->current()->count;
         parent::assertEquals($count, $actual);
     }
+    
+    protected function assertTableRowExists($table, $where)
+    {
+        $this->assertTableRowCount(1, $table, $where);
+    }
 
     /**
      * Initializes database on first run then resets tables on subsequent runs.
@@ -77,47 +89,51 @@ class TestCaseDb extends TestCaseService
     protected function setUp()
     {
         parent::setUp();
-
-        $services = $this->getServices();
-        $dbMainServiceName = isset($GLOBALS['DB_MAIN_SERVICE_NAME']) ? $GLOBALS['DB_MAIN_SERVICE_NAME'] : 'db';
-        $dbTestServiceName = isset($GLOBALS['DB_TEST_SERVICE_NAME']) ? $GLOBALS['DB_TEST_SERVICE_NAME'] : null;
-        $source = $services->get($dbMainServiceName);
-        $dest = null === $dbTestServiceName ? $services->get($dbMainServiceName) : $services->get($dbTestServiceName);
         
+        $services = $this->getServiceLocator();
+
         if (null === self::$dbAdapter) {
-            self::$dbAdapter = $dest;
+            // initialize database connections
+            if (isset($GLOBALS['DB_MAIN_SERVICE_NAME'])) {
+                self::$dbAdapterName = $GLOBALS['DB_MAIN_SERVICE_NAME'];
+            }
+            $dbAdapterDefault = $services->get(self::$dbAdapterName);
+            $dbAdapterTest = isset($GLOBALS['DB_TEST_SERVICE_NAME'])
+                    ? $services->get($GLOBALS['DB_TEST_SERVICE_NAME'])
+                    : $dbAdapterDefault;
+            self::$dbAdapter = $dbAdapterTest;
+            self::$dbTemporary = $dbAdapterDefault->getCurrentSchema() == $dbAdapterTest->getCurrentSchema();
+
+            // reset static tables
+            if (!self::$dbTemporary) {
+                $destDatabase = $dbAdapterTest->platform->quoteIdentifier($dbAdapterTest->getCurrentSchema());
+                $dbAdapterTest->query("DROP DATABASE $destDatabase", Adapter::QUERY_MODE_EXECUTE);
+                $dbAdapterTest->query("CREATE DATABASE $destDatabase", Adapter::QUERY_MODE_EXECUTE);
+                $dbAdapterTest->query("USE $destDatabase", Adapter::QUERY_MODE_EXECUTE);
+            }
             
-            $this->initializeDatabase($source, $dest);
+            // create test tables
+            foreach ($this->getTables($dbAdapterDefault) as $table) {
+                $this->createTestTable($table, $dbAdapterDefault, $dbAdapterTest);
+            }
         } else {
             foreach ($this->getTables(self::$dbAdapter) as $table) {
-                if ($source->getCurrentSchema() == $dest->getCurrentSchema()) {
+                // make sure temporary tables are temporary
+                if (self::$dbTemporary) {
                     $createTable = $this->getCreateTable($table, self::$dbAdapter);
                     if (strpos($createTable, 'CREATE TEMPORARY TABLE') === false) {
                         throw new \Exception("Table '$table' is not temporary");
                     }
                 }
+                // empty tables
                 $result = self::$dbAdapter->query("truncate table `$table`",
-                        Adapter::QUERY_MODE_EXECUTE);
+                    Adapter::QUERY_MODE_EXECUTE);
             }
-        }
         
-        $allowOverride = $services->getAllowOverride();
-        $services->setAllowOverride(true)
-                ->setService($dbMainServiceName, self::$dbAdapter)
+            $allowOverride = $services->getAllowOverride();
+            $services->setAllowOverride(true)
+                ->setService(self::$dbAdapterName, self::$dbAdapter)
                 ->setAllowOverride($allowOverride);
-    }
-    
-    private function initializeDatabase(Adapter $source, Adapter $dest)
-    {
-        if ($source->getCurrentSchema() != $dest->getCurrentSchema()) {
-            $destDatabase = $dest->platform->quoteIdentifier($dest->getCurrentSchema());
-            $dest->query("DROP DATABASE $destDatabase", Adapter::QUERY_MODE_EXECUTE);
-            $dest->query("CREATE DATABASE $destDatabase", Adapter::QUERY_MODE_EXECUTE);
-            $dest->query("USE $destDatabase", Adapter::QUERY_MODE_EXECUTE);
-        }
-        
-        foreach ($this->getTables($source) as $table) {
-            $this->createTestTable($table, $source, $dest);
         }
     }
     
@@ -133,13 +149,6 @@ class TestCaseDb extends TestCaseService
         if ($source->getCurrentSchema() == $dest->getCurrentSchema()) {
             $createTable = str_replace('CREATE TABLE', 'CREATE TEMPORARY TABLE',
                 $createTable);
-//         } else {
-//             if (preg_match('"^\s*CREATE\s*(TEMPORARY)?\s*TABLE\s*(IF\s*NOT\s*EXISTS)?\s*`?(\w+)`?\s"i', 
-//                     $createTable, $matches)) {
-//                 $createTable = "DROP TABLE IF EXISTS `{$matches[3]}`; \n" . $createTable;
-//             } else {
-//                 throw new \Exception("Cannot parse create table statement");
-//             }
         }
         $createTable = preg_replace('/ENGINE=\w+/', 'ENGINE=Memory',
             $createTable, 1);
