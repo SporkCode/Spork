@@ -26,7 +26,7 @@ use Zend\Db\Sql\Expression;
 class TestCaseDb extends TestCaseService
 {
     /**
-     * Database adapter
+     * Database adapter to be used in tests
      * 
      * @var \Zend\Db\Adapter\AdapterInterface
      */
@@ -40,11 +40,19 @@ class TestCaseDb extends TestCaseService
     protected static $dbAdapterName = 'db';
     
     /**
-     * Are database table temporary or static
+     * Name of default database. 
      * 
-     * @var boolean
+     * @var string
      */
-    protected static $dbTemporary;
+    protected static $dbSchemaDefault;
+    
+    /**
+     * Name of test database. This is null if a test database adapter is not defined
+     * and temporary tables are created in the same database.
+     * 
+     * @var string|null
+     */
+    protected static $dbSchemaTest;
 
     /**
      * Assert that a table has specified number for rows
@@ -98,28 +106,42 @@ class TestCaseDb extends TestCaseService
                 self::$dbAdapterName = $GLOBALS['DB_MAIN_SERVICE_NAME'];
             }
             $dbAdapterDefault = $services->get(self::$dbAdapterName);
-            $dbAdapterTest = isset($GLOBALS['DB_TEST_SERVICE_NAME'])
-                    ? $services->get($GLOBALS['DB_TEST_SERVICE_NAME'])
-                    : $dbAdapterDefault;
-            self::$dbAdapter = $dbAdapterTest;
-            self::$dbTemporary = $dbAdapterDefault->getCurrentSchema() == $dbAdapterTest->getCurrentSchema();
+            self::$dbSchemaDefault = $dbAdapterDefault->getCurrentSchema();
+            if (isset($GLOBALS['DB_TEST_SERVICE_NAME'])) {
+                self::$dbAdapter = $services->get($GLOBALS['DB_TEST_SERVICE_NAME']);
+                self::$dbSchemaTest = self::$dbAdapter->getCurrentSchema();
+            } else {
+                self::$dbAdapter = $dbAdapterDefault;
+            }
 
-            // reset static tables
-            if (!self::$dbTemporary) {
-                $destDatabase = $dbAdapterTest->platform->quoteIdentifier($dbAdapterTest->getCurrentSchema());
-                $dbAdapterTest->query("DROP DATABASE $destDatabase", Adapter::QUERY_MODE_EXECUTE);
-                $dbAdapterTest->query("CREATE DATABASE $destDatabase", Adapter::QUERY_MODE_EXECUTE);
-                $dbAdapterTest->query("USE $destDatabase", Adapter::QUERY_MODE_EXECUTE);
+            // drop static tables
+            if (null !== self::$dbSchemaTest) {
+                self::$dbAdapter->query("DROP DATABASE {$this->quoteIdentifier(self::$dbSchemaTest)}", Adapter::QUERY_MODE_EXECUTE);
+                self::$dbAdapter->query("CREATE DATABASE {$this->quoteIdentifier(self::$dbSchemaTest)}", Adapter::QUERY_MODE_EXECUTE);
+                self::$dbAdapter->query("USE {$this->quoteIdentifier(self::$dbSchemaTest)}", Adapter::QUERY_MODE_EXECUTE);
             }
             
             // create test tables
             foreach ($this->getTables($dbAdapterDefault) as $table) {
-                $this->createTestTable($table, $dbAdapterDefault, $dbAdapterTest);
+                $this->createTestTable($table, $dbAdapterDefault, self::$dbAdapter);
+            }
+            
+            // copy triggers
+            if (null !== self::$dbSchemaTest) {
+                $triggers = self::$dbAdapter->query(
+                    "SHOW TRIGGERS FROM {$this->quoteIdentifier(self::$dbSchemaDefault)}",
+                    Adapter::QUERY_MODE_EXECUTE);
+                foreach ($triggers as $trigger) {
+                    $createTrigger = self::$dbAdapter->query(
+                        "SHOW CREATE TRIGGER {$this->quoteIdentifier(self::$dbSchemaDefault)}.{$this->quoteIdentifier($trigger['Trigger'])}", 
+                        Adapter::QUERY_MODE_EXECUTE);
+                    self::$dbAdapter->query($createTrigger->current()['SQL Original Statement'], Adapter::QUERY_MODE_EXECUTE);
+                }
             }
         } else {
             foreach ($this->getTables(self::$dbAdapter) as $table) {
                 // make sure temporary tables are temporary
-                if (self::$dbTemporary) {
+                if (null === self::$dbSchemaTest) {
                     $createTable = $this->getCreateTable($table, self::$dbAdapter);
                     if (strpos($createTable, 'CREATE TEMPORARY TABLE') === false) {
                         throw new \Exception("Table '$table' is not temporary");
@@ -184,5 +206,10 @@ class TestCaseDb extends TestCaseService
             Adapter::QUERY_MODE_EXECUTE)->toArray();
         $tables = array_map('array_pop', $tables);
         return $tables;
+    }
+    
+    private function quoteIdentifier($name)
+    {
+        return self::$dbAdapter->getPlatform()->quoteIdentifier($name);
     }
 }
