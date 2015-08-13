@@ -157,6 +157,12 @@ class TestCaseDb extends TestCaseService
                 ->setService(self::$dbAdapterName, self::$dbAdapter)
                 ->setAllowOverride($allowOverride);
         }
+        
+        $allowOverride = $services->getAllowOverride();
+        $services
+            ->setAllowOverride(true)
+            ->setService(self::$dbAdapterName, self::$dbAdapter)
+            ->setAllowOverride($allowOverride);
     }
     
     /**
